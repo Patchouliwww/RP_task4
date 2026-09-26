@@ -173,28 +173,85 @@ git reflog                    # 查看 HEAD 的移动记录，找回"丢失"的�
 
 ## 七、推送到 GitHub
 
-### 首次：在网页上建空仓库
+### 7.1 从零建一个仓库：完整流程
 
-打开 GitHub → New repository → 填仓库名（如 `hikvision-camera-wrapper`）→
-**不要勾选** Add a README / .gitignore / license（勾了会导致首次 push 冲突，
-还要额外做合并）。
+以后每开一个新项目都是这两段式：**网页上建一个空的 → 本地推上去。**
 
-然后在本仓库执行（把 URL 换成你自己的）：
+#### 第一段：在网页上建空仓库
+
+1. GitHub 右上角 `+` → New repository。
+2. 填 Repository name（如 `RP_task4`），选 Public / Private。
+3. **下面三个初始化选项一个都不要勾**：Add a README file、Add .gitignore、
+   Choose a license。让仓库建成完全空白。
+4. 点 Create repository。
+
+第 3 步是新手最容易踩的坑。如果勾了 README，GitHub 会先在远程仓库放一个提交，
+而你的本地仓库也有自己的提交，两者没有共同祖先，首次 push 会被直接拒绝：
+
+```
+! [rejected]        main -> main (fetch first)
+error: failed to push some refs to '...'
+hint: Updates were rejected because the remote contains work that you do not have locally.
+```
+
+补救办法是 `git pull --rebase origin main`，把远程那个提交挪到本地提交下面再推 ——
+能救回来，但平白多出一次合并。**空仓库没有这个问题，所以一开始就别勾。**
+不勾的代价只是仓库首页暂时空着，等我们把 README 推上去就有了。
+
+#### 第二段：把本地仓库推上去
+
+创建成功后 GitHub 会显示一个引导页，上面有三段代码，它们对应三种不同处境，
+**别乱选**：
+
+| 页面上的代码块 | 适用情况 | 该不该用 |
+| --- | --- | --- |
+| `echo "# xxx" >> README.md` 开头那段 | 本地还没有仓库，从零开始 | ✗ 会重复 `git init` 并覆盖你的 README |
+| 「快速安装」 | 用 GitHub 模板建仓库 | ✗ 不适用 |
+| 「…或从命令行中推送现有的仓库」 | 本地已有仓库和提交 | ✓ **就是这段** |
+
+还要注意引导页默认停在 `SSH` 标签页，URL 形如
+`git@github.com:用户名/仓库名.git`。**本机 `~/.ssh` 是空的，用 SSH 地址会报
+`Permission denied (publickey)`。** 点旁边的 `HTTPS` 标签，拿
+`https://github.com/用户名/仓库名.git` 再用。两种方式的区别只是认证手段不同，
+HTTPS 用 token，SSH 用密钥。
+
+在本地仓库目录里执行：
 
 ```bash
-git remote add origin https://github.com/<你的用户名>/<仓库名>.git
+git remote add origin https://github.com/<用户名>/<仓库名>.git
 git branch -M main
 git push -u origin main
 ```
 
-提示 `Username` 时填 GitHub 用户名，提示 `Password` 时**必须填 Personal
-Access Token，不能填账号密码**（GitHub 早已取消密码认证）。
+逐条解释，因为这几条以后每次都用：
 
-### 生成 Personal Access Token
+- `git remote add origin <URL>` —— 给远程仓库起个名字并记住地址。`origin` 只是
+  **默认约定的名字**，不是关键字，但大家都用它。`git remote -v` 随时查看记住了哪些地址。
+- `git branch -M main` —— 把当前分支强制改名成 `main`。只在本地误建出 `master`
+  分支时才需要；用 `git init -b main` 建出来的本来就是 main，这条是保险。
+- `git push -u origin main` —— 把本地 `main` 推到 `origin` 的 `main`。
+  `-u` 是 `--set-upstream` 的缩写，**只在第一次推送时加**：它把本地 main 和远程
+  origin/main 关联起来。关联之后 `git push` / `git pull` 不用再带参数，
+  `git status` 也会告诉你「本地领先远程几个提交」。
 
-GitHub → Settings → Developer settings → Personal access tokens → Tokens
-(classic) → Generate new token，勾选 `repo` 权限，设置过期时间。
-**token 只在生成时显示一次，当场复制保存。**
+提示 `Username` 时填 GitHub 用户名，提示 `Password` 时**必须填 Personal Access
+Token，不能填账号密码**（GitHub 早已取消密码认证）。
+
+### 7.2 建 Personal Access Token
+
+GitHub 右上角头像 → Settings → Developer settings → Personal access tokens →
+Tokens (classic) → Generate new token (classic)：
+
+- Note 填个能认出来的用途，比如 `task4-laptop`；
+- Expiration 选 90 天（不要把过期设成 no expiration）；
+- 权限勾 **`repo`**（公开仓库理论上 `public_repo` 就够，但如果以后把仓库改成私有，
+  只有 `repo` 才推得动，直接勾 `repo` 省事）；
+- 点 Generate token，**token 只在生成时显示一次，当场复制保存**。
+
+推送时会不会弹出输入提示，取决于系统有没有图形凭据对话框：本机是纯命令行环境，
+所以在终端里执行 `git push` 会**直接出现 `Username for 'https://github.com':` 提示行**，
+依次输入 GitHub 用户名和刚才那个 token 即可。输错 token 会报
+`Authentication failed`，重跑一次 `git push` 再输就行，不会留下垃圾提交。
 
 ### 之后日常推送
 
