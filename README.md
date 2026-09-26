@@ -29,22 +29,57 @@ cmake -S . -B build
 cmake --build build -j4
 ```
 
-> 工程骨架尚未搭建，以上命令在 CMakeLists.txt 落地后才可用。
+产物在 `build/lib/libcamera_wrapper.so` 与 `build/bin/`。
 
-运行时若 MVS 库不在系统搜索路径内，可以不依赖 `LD_LIBRARY_PATH`：
-CMake 里用 `BUILD_RPATH` 指向 `/opt/MVS/lib/64`，同时在 `main()` 开头
-`setenv("MVCAM_COMMON_RUNENV", ...)` 兜底。
+## 先跑这个：环境自检
 
-## 计划中的目录结构
+```bash
+./build/bin/enumerate          # 枚举所有传输层
+./build/bin/enumerate gige     # 只看网口相机
+./build/bin/enumerate usb      # 只看 USB 相机
+```
+
+没插相机时它输出「未发现设备」并以 0 退出 —— **这是正确结果，不是失败**。
+它同时证明了 SDK 装好、头文件可见、库能链接、rpath 配好了，
+是排查"代码跑不起来"时应当最先执行的一步。
+
+不需要 `LD_LIBRARY_PATH`：SDK 库路径已经通过 `-Wl,-rpath` 写进可执行文件
+（`readelf -d build/bin/enumerate` 可以看到 RUNPATH 里的 `/opt/MVS/lib/64`）。
+这一点很关键：非交互式 shell 不读 `~/.bashrc`，所以在 IDE、CMake、脚本里
+那个环境变量都是空的，靠它会在点"运行"的时候突然报找不到 `.so`。
+
+## 本机 SDK 与参考资料
+
+| 位置 | 内容 |
+| --- | --- |
+| `/opt/MVS/include/` | 头文件：`MvCameraControl.h`、`CameraParams.h`、`MvErrorDefine.h`、`PixelType.h` |
+| `/opt/MVS/lib/64/` | `libMvCameraControl.so`（当前 4.8.2.2） |
+| `/opt/MVS/doc/` | **官方开发文档**，含《工业相机Linux SDK开发指南（C）》中文版 |
+| `/opt/MVS/Samples/64/C++/` | 官方样例。`General/GrabImage`（轮询取图）、`General/GrabImage_Callback`（回调）、`General/ImageSave`、`General/ParametrizeCamera_LoadAndSave`、`AreaScanCamera/SetParam`、`AreaScanCamera/Trigger_Image` |
+| `/opt/MVS/bin/MVS.sh` | 图形客户端。排查设备问题时先开它确认设备可见，再跑自己的代码 |
+
+## 目录结构
 
 ```
 task4/
-├── CMakeLists.txt        顶层：C++17、导出 compile_commands.json
-├── cmake/FindMVS.cmake   定位 MVS SDK，找不到时给出清晰报错
-├── include/camera/       对外头文件（不出现任何 MVS SDK 类型）
-├── src/                  实现，MVS 头文件只在这里出现（Pimpl）
-├── apps/                 示例程序：枚举设备、单帧取图、连续取图、参数读写
-└── docs/                 设计文档、逐步讲解、git 操作手册
+├── CMakeLists.txt        顶层：C++17、导出 compile_commands.json、-Wall -Wextra
+├── cmake/FindMVS.cmake   定位 MVS SDK；把头文件设为导入目标的系统包含目录，
+│                         rpath 也在这里写进去
+├── include/camera/       对外头文件（不出现任何 MVS 类型）
+│   ├── CameraTypes.h     传输层、权限级别、像素格式枚举
+│   ├── CameraError.h     错误码 → 中文说明；CameraException
+│   ├── CameraInfo.h      设备描述 CameraInfo / DeviceDescriptor
+│   ├── Frame.h           一帧图像、帧率统计
+│   └── Camera.h          主类接口
+├── src/                  实现，MVS 头文件只在这一层出现
+│   ├── MvsMapping.h      本库枚举 ↔ SDK 宏 的转换（私有头）
+│   ├── Camera.cpp        句柄 RAII、枚举、设备生命周期
+│   ├── CameraInfo.cpp    设备信息格式化
+│   ├── CameraError.cpp   错误码表
+│   └── CameraTypes.cpp   枚举与字符串转换
+├── apps/                 示例程序
+│   └── enumerate.cpp     设备枚举（无相机即可运行）
+└── docs/                 设计与操作文档
 ```
 
 ## 相关文档
@@ -54,11 +89,13 @@ task4/
 ## 进度
 
 - [x] git 仓库初始化、身份与提交规范配置
-- [ ] CMake 工程骨架 + clangd / VSCode 智能感知配置
-- [ ] MVS SDK 安装与环境验证
-- [ ] 设备枚举程序（无相机即可运行验证）
-- [ ] `Camera` 类接口设计与实现
+- [x] CMake 工程骨架 + clangd / VSCode 智能感知配置
+- [x] MVS SDK 安装与环境验证（官方样例编译运行通过）
+- [x] 设备枚举程序（无相机即可运行验证）
+- [x] `Camera` 类接口设计、错误码映射、句柄 RAII 生命周期
+- [ ] 参数读写（曝光 / 增益 / 帧率 / 触发）
 - [ ] 取流线程与帧队列
-- [ ] 参数读写与软触发
+- [ ] 像素格式转换（Bayer → BGR8）
 - [ ] 接入相机联调、录制取图视频
-- [ ] 设计文档与提交记录整理
+- [ ] 设计文档与逐块讲解文档
+
