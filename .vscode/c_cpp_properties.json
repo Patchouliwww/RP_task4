@@ -1,0 +1,24 @@
+{
+    // 微软 C/C++ 插件的备用配置。
+    // 当前 settings.json 里把 C_Cpp.intelliSenseEngine 设成了 "disabled"，
+    // 实际生效的是 clangd，读的是 build/compile_commands.json。
+    // 这份配置是为"哪天换回微软插件"准备的：把 settings.json 里那一项
+    // 改成 "default" 即可无缝切换。
+    "configurations": [
+        {
+            "name": "Linux-GCC-11",
+            "includePath": [
+                "${workspaceFolder}/include",
+                "/opt/MVS/include",
+                "/usr/local/include/opencv4"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++-11",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+        }
+    ],
+    "version": 4
+}

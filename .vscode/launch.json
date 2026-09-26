@@ -1,0 +1,29 @@
+{
+    // 调试配置。
+    // 开发过程中真用上过一次：MV_CC_Finalize 放在静态对象析构里会导致
+    // 退出时段错误，崩溃点在 MvFGProducerGEV.cti 内部，和相机看不出关系。
+    // 当时就是靠 gdb 的回溯（这里有同样的配置）定位到是哪个析构函数在调它。
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "调试 enumerate",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/enumerate",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "2-cmake build"
+        }
+    ]
+}

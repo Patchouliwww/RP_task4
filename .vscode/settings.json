@@ -1,0 +1,24 @@
+{
+    // 用 clangd 作为代码智能感知引擎（clang 家族，与编译器 g++ 的行为更接近）
+    // 指向 apt 安装的系统 clangd（/usr/bin/clangd -> /usr/lib/llvm-14/bin/clangd）
+    // 这里写绝对路径，是为了不受 PATH 顺序影响（~/.local/bin 排在 /usr/bin 前面）
+    "clangd.path": "/usr/bin/clangd",
+    "clangd.arguments": [
+        "--background-index",
+        "--clang-tidy=false",
+        "--completion-style=detailed",
+        "--header-insertion=never"
+    ],
+    // 没有进编译数据库的零散文件，也按 C++17 解析
+    "clangd.fallbackFlags": [
+        "-std=c++17"
+    ],
+    // 关掉微软 C/C++ 插件的 IntelliSense，避免和 clangd 同时报错、出现双份波浪线
+    // （如果哪天想换回微软插件，把这一项改成 "default" 即可，下面的
+    //   .vscode/c_cpp_properties.json 已经配好了）
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "files.associations": {
+        "*.h": "cpp",
+        "*.hpp": "cpp"
+    }
+}

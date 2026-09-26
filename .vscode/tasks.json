@@ -1,0 +1,45 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "1-cmake configure",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-S",
+                ".",
+                "-B",
+                "build"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "2-cmake build",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "build",
+                "-j4"
+            ],
+            "dependsOn": "1-cmake configure",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            // 没有相机也能跑：会打印「未发现设备」并正常退出。
+            // 用它做环境自检最快 —— 能跑通就说明 SDK、头文件、库链接、
+            // rpath 全部配好了。
+            "label": "3-run enumerate",
+            "type": "shell",
+            "command": "${workspaceFolder}/build/bin/enumerate",
+            "dependsOn": "2-cmake build",
+            "problemMatcher": []
+        }
+    ]
+}

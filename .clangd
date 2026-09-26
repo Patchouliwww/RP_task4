@@ -1,0 +1,21 @@
+# clangd 配置文件（clangd 会从工程根目录自动读取本文件）
+#
+# 为什么需要它：
+#   本机装的是 gcc/g++ 11，但 /usr/lib/gcc/x86_64-linux-gnu/12 目录也存在
+#   （只装了 gcc-12 的 C 编译器，没有 g++-12，也没有 /usr/include/c++/12）。
+#   clangd 默认会挑选“版本号最大”的 GCC，于是去找 /usr/include/c++/12，
+#   结果连 <iostream> 都找不到，满屏红波浪线。
+#   下面显式把本机真正的 libstdc++ 头文件目录加进来即可解决。
+#
+# 关于 MVS 头文件：
+#   src/ 里会 include MvCameraControl.h。它的路径不是硬编码在这里，而是由
+#   CMake 写进 compile_commands.json（FindMVS.cmake 里配的导入目标）。
+#   所以改 SDK 安装位置只需要重新跑一次 cmake，不用动本文件。
+CompileFlags:
+  Add:
+    - -isystem
+    - /usr/include/c++/11
+    - -isystem
+    - /usr/include/x86_64-linux-gnu/c++/11
+    - -isystem
+    - /usr/include/c++/11/backward
