@@ -1,23 +1,28 @@
-#include "camera/CameraError.h"
+#include <camera/CameraError.h>
 
 #include <cstdio>
 
-namespace camera {
+namespace camera
+{
 
-namespace {
+namespace
+{
 
-/// MVS 错误码表。
+/// MVS 错误码表。纯数据载体，成员保持 public。
 ///
 /// 数值来自 SDK 的 MvErrorDefine.h，不能凭记忆写 —— 每个版本都可能新增。
 /// 这里刻意不列全 SDK 定义的所有码（有上百个，其中大部分是采集卡专用），
-/// 只覆盖面阵相机开发中真正会遇到的；查不到的码会在 ToString 里回退成
-/// 带十六进制原值的字符串，信息不会丢。
-struct ErrorEntry {
-    uint32_t code;
+/// 只覆盖面阵相机开发中真正会遇到的；查不到的码会在 error_code_to_string 里
+/// 回退成带十六进制原值的字符串，信息不会丢。
+struct ErrorEntry
+{
+    std::uint32_t code;
     const char* text;
 };
 
-constexpr ErrorEntry kErrorTable[] = {
+// 规范的命名表只规定了「宏」用全大写，没有规定 constexpr 常量。
+// 这里用 k_ 前缀 + 小写下划线，与变量规范保持一致的观感，同时一眼能看出是编译期常量。
+constexpr ErrorEntry k_error_table[] = {
     { 0x00000000, "成功" },
 
     // —— SDK 通用错误 ——
@@ -69,53 +74,55 @@ constexpr ErrorEntry kErrorTable[] = {
     { 0x80000044, "尝试写入只读寄存器" },
 };
 
-constexpr const char* kUnknownErrorText = "未知错误码";
+constexpr const char* k_unknown_error_text = "未知错误码";
 
 } // namespace
 
-std::string ErrorCodeToString(int32_t code)
+std::string error_code_to_string(std::int32_t code)
 {
-    const uint32_t raw = static_cast<uint32_t>(code);
+    const std::uint32_t raw = static_cast<std::uint32_t>(code);
 
-    for (const ErrorEntry& entry : kErrorTable) {
-        if (entry.code == raw) {
+    for (const ErrorEntry& entry : k_error_table)
+    {
+        if (entry.code == raw)
             return entry.text;
-        }
     }
 
     // 表里没有也要把原值带出去：一个确切的十六进制码可以拿去查文档，
     // 而"未知错误"四个字什么都做不了。
     char buffer[64];
-    std::snprintf(buffer, sizeof(buffer), "%s 0x%08X", kUnknownErrorText, raw);
+    std::snprintf(buffer, sizeof(buffer), "%s 0x%08X", k_unknown_error_text, raw);
     return buffer;
 }
 
-CameraException::CameraException(int32_t code, const char* api)
-    : std::runtime_error(buildMessage(code, api))
-    , m_code(code)
-    , m_api(api)
-{
-}
 
-std::string CameraException::buildMessage(int32_t code, const char* api)
+std::string CameraException::build_message(std::int32_t code, const char* api)
 {
     std::string message = "MVS 调用失败：";
     message += api;
     message += "() → ";
-    message += ErrorCodeToString(code);
+    message += error_code_to_string(code);
 
     char buffer[32];
-    std::snprintf(buffer, sizeof(buffer), " (0x%08X)", static_cast<uint32_t>(code));
+    std::snprintf(buffer, sizeof(buffer), " (0x%08X)", static_cast<std::uint32_t>(code));
     message += buffer;
 
     return message;
 }
 
-void ThrowIfFailed(int32_t ret, const char* api)
+
+CameraException::CameraException(std::int32_t code, const char* api)
+    : std::runtime_error(build_message(code, api))
+    , m_code(code)
+    , m_api(api)
 {
-    if (ret != 0) {  // MV_OK == 0
+}
+
+
+void throw_if_failed(std::int32_t ret, const char* api)
+{
+    if (ret != 0)  // MV_OK == 0
         throw CameraException(ret, api);
-    }
 }
 
 } // namespace camera

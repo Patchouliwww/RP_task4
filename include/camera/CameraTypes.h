@@ -3,14 +3,16 @@
 #include <cstdint>
 #include <string>
 
-namespace camera {
+namespace camera
+{
 
 /// 相机与主机之间的传输层协议。
 ///
 /// 取值刻意不复用 SDK 的 MV_*_DEVICE 宏，而是自己定义一套：
 /// 使用方只依赖本头文件，不需要知道 MVS 的存在。两边的对应关系集中在
 /// src/CameraTypes.cpp 里，改 SDK 或换品牌时只动那一处。
-enum class TransportLayer {
+enum class TransportLayer : std::uint8_t
+{
     Unknown = 0,
     GigE,        ///< GigE Vision：普通网口相机
     USB3,        ///< USB3 Vision
@@ -23,13 +25,14 @@ enum class TransportLayer {
     All,         ///< 不是真实协议，仅作为 enumerate 的“不过滤”参数
 };
 
-std::string ToString(TransportLayer layer);
+std::string to_string(TransportLayer layer);
 
 /// 打开设备时申请的权限级别。
 ///
 /// 工业相机允许多个进程同时连接，级别决定别的程序能做什么。
 /// 数值与 SDK 的 MV_ACCESS_xxx 保持一致，方便直接转换。
-enum class AccessMode {
+enum class AccessMode : std::uint8_t
+{
     Exclusive = 1,                  ///< 独占：其他程序只能读 CCP 寄存器
     ExclusiveWithSwitch = 2,        ///< 可从级别 5 抢占后以独占方式打开
     Control = 3,                    ///< 控制：其他程序可读全部寄存器
@@ -39,14 +42,15 @@ enum class AccessMode {
     Monitor = 7,                    ///< 只读监视：适合设备已被别人控制时旁观
 };
 
-std::string ToString(AccessMode mode);
+std::string to_string(AccessMode mode);
 
 /// 像素格式。
 ///
 /// 相机支持的格式有上百种（含各种位深、打包方式、Bayer 排列），
 /// 这里只列实际会用到的常见子集。遇到表里没有的格式统一落到 Unknown，
 /// 由调用方决定是报错还是按原始字节处理 —— 不静默当作 Mono8 处理。
-enum class PixelFormat {
+enum class PixelFormat : std::uint8_t
+{
     Unknown = 0,
     Mono8,          ///< 8 位灰度，可直接交给 OpenCV 当 CV_8UC1
     Mono10,
@@ -65,12 +69,12 @@ enum class PixelFormat {
     YUV422_8,
 };
 
-std::string ToString(PixelFormat format);
+std::string to_string(PixelFormat format);
 
 /// 是否为彩色格式（Bayer 或 RGB 系）。
-bool IsColorFormat(PixelFormat format);
+bool is_color_format(PixelFormat format);
 
 /// 是否为 Bayer 格式（必须做去马赛克才能正确显示）。
-bool IsBayerFormat(PixelFormat format);
+bool is_bayer_format(PixelFormat format);
 
 } // namespace camera

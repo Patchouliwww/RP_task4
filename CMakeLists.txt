@@ -18,6 +18,12 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # 隐式转换很容易写出看不出来的 bug，靠警告提前拦下来
 add_compile_options(-Wall -Wextra)
 
+# 规范 2.4 要求「任何虚函数覆写必须加 override」。漏写不会报错，而是派生类新增
+# 一个函数把基类的隐藏掉，调用方以为走的是虚函数分派、实际调到了基类版本 ——
+# 这种 bug 靠读代码很难发现。打开警告让编译器强制检查
+# （规范的附录 D 里也建议了 GCC 用 -Wsuggest-override）。
+add_compile_options(-Wsuggest-override)
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # 海康 MVS SDK：头文件 + libMvCameraControl.so
